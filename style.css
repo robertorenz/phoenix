@@ -104,13 +104,31 @@ html, body {
 }
 #m-btn:hover, #m-btn:focus-visible { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(45, 212, 191, 0.45); outline: none; }
 
-#m-alt {
-  display: block; margin: 16px auto 0; padding: 4px 8px;
+#m-links { display: flex; justify-content: center; gap: 22px; margin-top: 16px; }
+#m-links[hidden] { display: none; }
+#m-links button {
+  padding: 4px 2px;
   font: inherit; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--muted); background: none; border: 0; border-bottom: 1px solid var(--line); cursor: pointer;
 }
-#m-alt[hidden] { display: none; }
-#m-alt:hover, #m-alt:focus-visible { color: var(--teal); border-color: var(--teal); outline: none; }
+#m-links button:hover, #m-links button:focus-visible { color: var(--teal); border-color: var(--teal); outline: none; }
+.scores { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.scores th { font-size: 11px; font-weight: 400; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); padding: 0 8px 6px; border-bottom: 1px solid var(--line); }
+.scores td { padding: 5px 8px; color: var(--text); border-bottom: 1px solid rgba(29, 58, 85, 0.45); }
+.scores th:first-child, .scores td:first-child { text-align: left; color: var(--muted); width: 2.2em; }
+.scores th:nth-child(2), .scores td:nth-child(2) { text-align: left; letter-spacing: 0.2em; }
+.scores th:nth-child(n+3), .scores td:nth-child(n+3) { text-align: right; }
+.scores tr.mark td { color: var(--amber); font-weight: 700; background: rgba(245, 176, 65, 0.1); }
+.empty { margin: 14px 0 0; }
+.entry { display: block; margin-top: 16px; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; }
+.entry input {
+  display: block; width: 5.2em; margin: 8px auto 0; padding: 6px 0 6px 0.4em;
+  font: inherit; font-size: 30px; font-weight: 700; letter-spacing: 0.4em; text-align: center; text-transform: uppercase;
+  color: var(--amber); background: rgba(29, 58, 85, 0.35); caret-color: var(--teal);
+  border: 1px solid var(--line); border-bottom: 2px solid var(--teal); border-radius: 6px;
+  -webkit-user-select: text; user-select: text;
+}
+.entry input:focus { outline: none; border-color: var(--teal); }
 .about { text-align: left; font-size: 14px; max-height: 52vh; overflow-y: auto; padding-right: 6px; }
 .about h2 { margin: 16px 0 4px; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--amber); }
 .about h2:first-child { margin-top: 0; }

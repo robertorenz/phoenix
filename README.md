@@ -22,7 +22,9 @@ A remake of the 1980 arcade shooter **Phoenix**, rendered in 2.5D with Three.js:
 | 4 | Phoenix Fury | A bigger hatch, and a third shot again. |
 | 5 | Mothership | Chew through the hull and the rotating belt, then hit the alien pilot. |
 
-After the mothership falls the cycle repeats, faster. An extra ship is awarded every 10,000 points, and the high score is kept in the browser.
+After the mothership falls the cycle repeats, faster. An extra ship is awarded every 10,000 points.
+
+A top-10 **high score table** records initials, score and wave reached. Place on the board and you are asked for three initials at game over; the table is also available from the title and pause screens. Scores are stored in your browser (`localStorage`), so they are per device, not shared online.
 
 ## Controls
 

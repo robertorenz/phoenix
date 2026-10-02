@@ -15,6 +15,9 @@ const FW = 13;      // half width of the play field
 const PY = -9;      // player row
 const TOP = 12;     // top of the play field
 const HI_KEY = 'phoenix25d.hi';
+const SCORES_KEY = 'phoenix25d.scores';
+const NAME_KEY = 'phoenix25d.name';
+const MAX_SCORES = 10;
 const STAGE_NAMES = ['Scout Flock', 'Raider Flock', 'Phoenix Hatchery', 'Phoenix Fury', 'Mothership'];
 const C = { bg: 0x050b14, teal: 0x2dd4bf, amber: 0xf5b041, coral: 0xef5d50, blue: 0x3b9eff, steel: 0x8fa3b8, hull: 0xdfe7ef, green: 0x9be564 };
 
@@ -330,6 +333,32 @@ function makeMothership() {
 const G = { mode: 'menu', score: 0, hi: 0, lives: 3, stage: 0, loop: 0, t: 0, clearT: -1, bannerT: 0, diveT: 2, nextLife: 10000, muted: false, shake: 0, newHi: false };
 try { G.hi = +localStorage.getItem(HI_KEY) || 0; } catch { /* storage unavailable */ }
 
+// High score table: top MAX_SCORES entries, kept in this browser only.
+const cleanName = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+let scores = [];
+try {
+  const raw = JSON.parse(localStorage.getItem(SCORES_KEY) || '[]');
+  if (Array.isArray(raw)) {
+    scores = raw.map(e => ({ name: cleanName(e?.name) || '---', score: Math.max(0, Math.floor(+e?.score || 0)), wave: Math.max(1, Math.floor(+e?.wave || 1)) }))
+      .filter(e => e.score > 0).sort((a, b) => b.score - a.score).slice(0, MAX_SCORES);
+  }
+} catch { /* storage unavailable or corrupt */ }
+if (scores.length) G.hi = Math.max(G.hi, scores[0].score);
+const scoreRank = n => { const i = scores.findIndex(e => n > e.score); return i < 0 ? scores.length : i; };
+const qualifies = n => n > 0 && scoreRank(n) < MAX_SCORES;
+function saveScore(name, score, wave) {
+  const i = scoreRank(score);
+  scores.splice(i, 0, { name, score, wave });
+  scores.length = Math.min(scores.length, MAX_SCORES);
+  try { localStorage.setItem(SCORES_KEY, JSON.stringify(scores)); localStorage.setItem(NAME_KEY, name); } catch { /* storage unavailable */ }
+  return i;
+}
+function scoresTable(mark = -1) {
+  if (!scores.length) return '<p class="empty">No scores yet. Be the first on the board.</p>';
+  const rows = scores.map((e, i) => `<tr${i === mark ? ' class="mark"' : ''}><td>${i + 1}</td><td>${e.name}</td><td>${e.score.toLocaleString()}</td><td>${e.wave}</td></tr>`).join('');
+  return `<table class="scores"><thead><tr><th>#</th><th>Name</th><th>Score</th><th>Wave</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 const P = { x: 0, vx: 0, dead: false, respawn: 0, invuln: 0, shieldT: 0, shieldCd: 0, fireCd: 0 };
 const ship = makeShip();
 ship.position.set(0, PY, 0);
@@ -384,13 +413,14 @@ const ABOUT = `<div class="about">
   Source: <a href="https://github.com/robertorenz/phoenix" target="_blank" rel="noopener">github.com/robertorenz/phoenix</a> (MIT).</p>
 </div>`;
 
-let modalBack = null;   // set while the About view is open: re-shows the modal underneath
+let modalBack = null;   // set while the About or High Scores view is open: re-shows the modal underneath
+let pendingEntry = false;   // the game-over modal is waiting for initials
 function showModal(kicker, title, body, btn, about = false) {
   $('m-kicker').textContent = kicker;
   $('m-title').textContent = title;
   $('m-body').innerHTML = body;
   $('m-btn').textContent = btn;
-  $('m-alt').hidden = !about;
+  $('m-links').hidden = !about;
   $('modal').classList.add('open');
   $('m-btn').focus();
 }
@@ -400,7 +430,8 @@ const showPause = () => showModal('Game', 'Paused', CONTROLS, 'Resume', true);
 
 function modalAction() {
   audio();
-  if (modalBack) { const back = modalBack; modalBack = null; back(); }
+  if (pendingEntry) submitEntry();
+  else if (modalBack) { const back = modalBack; modalBack = null; back(); }
   else if (G.mode === 'paused') { hideModal(); G.mode = 'play'; }
   else if (G.mode !== 'play') newGame();
 }
@@ -410,6 +441,11 @@ $('m-alt').addEventListener('click', () => {
   modalBack = G.mode === 'paused' ? showPause : showMenu;
   showModal('Arcade, 1980', 'About', ABOUT, 'Back');
 });
+$('m-scores').addEventListener('click', () => {
+  if (G.mode === 'play') return;
+  modalBack = G.mode === 'paused' ? showPause : showMenu;
+  showModal('Top 10', 'High Scores', scoresTable(), 'Back');
+});
 
 function togglePause() {
   if (G.mode === 'play') {
@@ -418,11 +454,32 @@ function togglePause() {
   } else if (G.mode === 'paused') modalAction();
 }
 
+const reachedWave = () => G.loop * 5 + G.stage + 1;
+
 function gameOver() {
   G.mode = 'over';
+  if (!qualifies(G.score)) { showGameOver(-1); return; }
+  let last = '';
+  try { last = cleanName(localStorage.getItem(NAME_KEY)); } catch { /* storage unavailable */ }
   const body = `<span class="big">${G.score.toLocaleString()}</span>` +
-    (G.newHi ? '<span class="new">New high score</span>' : `High score <strong>${G.hi.toLocaleString()}</strong>`) +
-    `<br>You reached wave <strong>${G.loop * 5 + G.stage + 1}</strong>.`;
+    `<span class="new">Rank ${scoreRank(G.score) + 1} on the board</span>` +
+    `<label class="entry">Enter your initials<input id="m-name" type="text" maxlength="3" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${last}"></label>`;
+  showModal('Final score', 'Game Over', body, 'Save Score');
+  pendingEntry = true;
+  const input = $('m-name');
+  input.addEventListener('input', () => { input.value = cleanName(input.value); });
+  input.focus();
+  input.select();
+}
+
+function submitEntry() {
+  pendingEntry = false;
+  showGameOver(saveScore(cleanName($('m-name').value) || 'AAA', G.score, reachedWave()));
+}
+
+function showGameOver(mark) {
+  const body = `<span class="big">${G.score.toLocaleString()}</span>` +
+    `You reached wave <strong>${reachedWave()}</strong>.` + scoresTable(mark);
   showModal('Final score', 'Game Over', body, 'Play Again');
 }
 
@@ -431,8 +488,10 @@ function gameOver() {
 const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'fire', ArrowUp: 'fire', KeyW: 'fire', ArrowDown: 'shield', KeyS: 'shield', ShiftLeft: 'shield', ShiftRight: 'shield' };
 addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
-  if (k) { keys[k] = true; if (G.mode === 'play') e.preventDefault(); }
+  const typing = e.target instanceof HTMLInputElement;   // initials entry: only Enter is ours
+  if (k && !typing) { keys[k] = true; if (G.mode === 'play') e.preventDefault(); }
   if (e.repeat) return;
+  if (typing && e.code !== 'Enter') return;
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
   if (e.code === 'KeyM') G.muted = !G.muted;
   if (e.code === 'Enter' && G.mode !== 'play') { e.preventDefault(); modalAction(); }
