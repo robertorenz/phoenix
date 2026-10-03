@@ -33,11 +33,11 @@ A top-10 **high score table** records initials, score and wave reached. Place on
 
 ## Classic 1980 mode
 
-| Round 2: raiders | Round 5: mothership |
-| --- | --- |
-| ![Classic mode, round 2](docs/classic-round2.jpg) | ![Classic mode, the mothership](docs/classic-mothership.jpg) |
+| Round 1: scouts | Round 3: hatched phoenixes | Round 5: mothership |
+| --- | --- | --- |
+| ![Classic mode, round 1](docs/classic-round1.jpg) | ![Classic mode, round 3](docs/classic-round3.jpg) | ![Classic mode, the mothership](docs/classic-mothership.jpg) |
 
-The classic mode is drawn on the cabinet's 208×256 vertical raster with hand-made pixel sprites, scaled up with crisp pixels. It follows the original as closely as memory allows, without using any of its code, graphics or sound:
+The classic mode keeps the cabinet's vertical 13:16 picture and hand-made pixel sprites, drawn at twice the original's pixel density and rendered at the browser's native resolution so it fills the window height with crisp pixels. It follows the original as closely as memory allows, without using any of its code, graphics or sound:
 
 - Five rounds: two flocks of small birds, two rounds of eggs that hatch into large birds, then the mothership — looping faster each cycle.
 - One shot on screen at a time in rounds 1, 3 and 5; rapid fire in rounds 2 and 4.
