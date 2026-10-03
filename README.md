@@ -2,6 +2,11 @@
 
 A remake of the 1980 arcade shooter **Phoenix**, rendered in 2.5D with Three.js: the action plays out on a flat plane, but every ship, bird and block is a 3D model under a tilted perspective camera, with a parallax starfield, bloom and particle explosions.
 
+It ships with two ways to play:
+
+- **2.5D** — the modern remake (the default).
+- **Classic 1980** — a from-scratch 2D recreation of the arcade cabinet, reachable from the title screen or directly at [`classic.html`](https://robertorenz.github.io/phoenix/classic.html).
+
 **Play it:** https://robertorenz.github.io/phoenix/
 
 ![The mothership wave: the saucer's hull and rotating belt under fire](docs/wave5-mothership.jpg)
@@ -25,6 +30,24 @@ A remake of the 1980 arcade shooter **Phoenix**, rendered in 2.5D with Three.js:
 After the mothership falls the cycle repeats, faster. An extra ship is awarded every 10,000 points.
 
 A top-10 **high score table** records initials, score and wave reached. Place on the board and you are asked for three initials at game over; the table is also available from the title and pause screens. Scores are stored in your browser (`localStorage`), so they are per device, not shared online.
+
+## Classic 1980 mode
+
+| Round 2: raiders | Round 5: mothership |
+| --- | --- |
+| ![Classic mode, round 2](docs/classic-round2.jpg) | ![Classic mode, the mothership](docs/classic-mothership.jpg) |
+
+The classic mode is drawn on the cabinet's 208×256 vertical raster with hand-made pixel sprites, scaled up with crisp pixels. It follows the original as closely as memory allows, without using any of its code, graphics or sound:
+
+- Five rounds: two flocks of small birds, two rounds of eggs that hatch into large birds, then the mothership — looping faster each cycle.
+- One shot on screen at a time in rounds 1, 3 and 5; rapid fire in rounds 2 and 4.
+- The force field: a short-lived ring that destroys whatever touches it, roots the ship in place, and then has to recharge.
+- Large birds lose a wing when you hit it (50 points) and grow it back; only a body hit kills.
+- The mothership descends with its alien pilot behind a rotating conveyor belt and a stepped hull of blocks. Shoot through, hit the alien, and the bonus runs from 1,000 to 9,000 — the lower you let it get, the more it pays.
+- Small birds score 20 in formation and 40 / 50 / 80 the lower they are when hit; an extra ship comes at 5,000 points.
+- The two tunes the cabinet played, Sor's *Romance de Amor* and Beethoven's *Für Elise*, are synthesized at game start and when the mothership arrives.
+
+Its high score is kept separately from the 2.5D table.
 
 ## Controls
 
@@ -53,6 +76,7 @@ Then open http://localhost:8000. Three.js is loaded from the jsDelivr CDN.
 - `index.html` — page, HUD and modal markup
 - `style.css` — HUD, modal and touch-control styling
 - `game.js` — everything else: rendering, models, game logic, synthesized audio
+- `classic.html` / `classic.js` — the Classic 1980 mode: 2D canvas, pixel sprites, its own game logic and audio
 - `docs/` — screenshots used in this README
 
 ## About the original

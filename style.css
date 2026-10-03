@@ -104,6 +104,15 @@ html, body {
 }
 #m-btn:hover, #m-btn:focus-visible { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(45, 212, 191, 0.45); outline: none; }
 
+#m-classic {
+  display: block; width: fit-content; margin: 12px auto 0; padding: 10px 22px;
+  font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--amber); text-decoration: none;
+  border: 1px solid var(--amber); border-radius: 8px;
+  transition: background 0.12s, color 0.12s;
+}
+#m-classic[hidden] { display: none; }
+#m-classic:hover, #m-classic:focus-visible { background: var(--amber); color: #04121a; outline: none; }
 #m-links { display: flex; justify-content: center; gap: 22px; margin-top: 16px; }
 #m-links[hidden] { display: none; }
 #m-links button {

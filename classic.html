@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Phoenix — Classic 1980</title>
+<meta name="description" content="A faithful 2D recreation of the 1980 arcade shooter Phoenix.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23050b14'/%3E%3Cpath d='M16 5l9 21-9-5-9 5z' fill='%23f5b041'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; background: #02040a; }
+  #classic { display: block; background: #000; image-rendering: pixelated; image-rendering: crisp-edges; box-shadow: 0 0 0 2px #1d3a55, 0 0 60px rgba(45, 212, 191, 0.12); }
+  #classic.active { box-shadow: 0 0 0 2px #1d3a55, 0 0 60px rgba(245, 176, 65, 0.15); }
+  .modal.classic h1 { font-family: "Press Start 2P", monospace; font-size: clamp(18px, 5vw, 26px); letter-spacing: 0; color: var(--amber); line-height: 1.4; }
+  .modal.classic .kicker { color: var(--teal); }
+  #m-back { display: block; margin: 16px auto 0; font: inherit; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 3px; width: fit-content; }
+  #m-back:hover { color: var(--teal); border-color: var(--teal); }
+</style>
+</head>
+<body>
+<canvas id="classic" width="208" height="256" aria-label="Phoenix classic game"></canvas>
+
+<div id="touch">
+  <div class="pad">
+    <button data-k="left" aria-label="Move left">&#9664;</button>
+    <button data-k="right" aria-label="Move right">&#9654;</button>
+  </div>
+  <div class="pad">
+    <button data-k="shield" class="small" aria-label="Shield">Shield</button>
+    <button data-k="fire" class="fire" aria-label="Fire">Fire</button>
+  </div>
+</div>
+
+<div id="modal" class="backdrop">
+  <div class="modal classic" role="dialog" aria-modal="true" aria-labelledby="m-title">
+    <div id="m-kicker" class="kicker"></div>
+    <h1 id="m-title"></h1>
+    <div id="m-body"></div>
+    <button id="m-btn" type="button"></button>
+    <a id="m-back" href="./">Back to the 2.5D version</a>
+  </div>
+</div>
+
+<script type="module" src="classic.js"></script>
+</body>
+</html>

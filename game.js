@@ -405,7 +405,7 @@ const ABOUT = `<div class="about">
   <p><strong>Phoenix</strong> reached arcades in 1980. It is generally credited to Amstar Electronics of Phoenix, Arizona, and was distributed by Centuri in North America and Taito in Japan.</p>
   <p>It was among the first full-colour shooters built from distinct stages, and its mothership finale is remembered as one of the earliest boss fights in video games. The force-field shield and the birds whose wings grow back were its signatures.</p>
   <h2>This remake</h2>
-  <p>An unofficial, non-commercial fan tribute written from scratch. It uses no code, graphics or sound from the original, and is not affiliated with or endorsed by its rights holders.</p>
+  <p>Two modes: this 2.5D version, and a Classic 1980 mode that recreates the cabinet's 208&times;256 pixel look and round structure from memory. Both are unofficial, non-commercial fan tributes written from scratch. They use no code, graphics or sound from the original, and are not affiliated with or endorsed by its rights holders.</p>
   <h2>Credits</h2>
   <p>Created by <strong>Roberto Renz</strong>, built with Claude Code.<br>
   Rendering: <a href="https://threejs.org" target="_blank" rel="noopener">Three.js</a> (MIT).
@@ -421,11 +421,15 @@ function showModal(kicker, title, body, btn, about = false) {
   $('m-body').innerHTML = body;
   $('m-btn').textContent = btn;
   $('m-links').hidden = !about;
+  $('m-classic').hidden = true;
   $('modal').classList.add('open');
   $('m-btn').focus();
 }
 const hideModal = () => $('modal').classList.remove('open');
-const showMenu = () => showModal('A 2.5D arcade remake', 'PHOENIX', `Clear the flocks, crack the eggs, and bring down the mothership.${CONTROLS}`, 'Start Game', true);
+const showMenu = () => {
+  showModal('A 2.5D arcade remake', 'PHOENIX', `Clear the flocks, crack the eggs, and bring down the mothership.${CONTROLS}`, 'Start Game', true);
+  $('m-classic').hidden = false;
+};
 const showPause = () => showModal('Game', 'Paused', CONTROLS, 'Resume', true);
 
 function modalAction() {
