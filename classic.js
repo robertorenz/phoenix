@@ -7,10 +7,14 @@ const $ = id => document.getElementById(id);
 const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, k) => a + (b - a) * k;
+const flapFrame = (t, speed) => [0, 1, 2, 1][((Math.floor(t * speed) % 4) + 4) % 4];   // safe for negative t
 
 const W = 208, H = 256;
 const PY = 228;               // player ship top edge
 const HI_KEY = 'phoenix.classic.hi';
+const SCORES_KEY = 'phoenix.classic.scores';
+const NAME_KEY = 'phoenix.classic.name';
+const MAX_SCORES = 10;
 
 const cv = $('classic'), ctx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -232,6 +236,32 @@ const sfx = {
 
 const G = { mode: 'menu', score: 0, hi: 0, lives: 3, round: 0, loop: 0, t: 0, clearT: -1, diveT: 2, nextLife: 5000, muted: false, bonus: null, flash: 0 };
 try { G.hi = +localStorage.getItem(HI_KEY) || 0; } catch { /* storage unavailable */ }
+
+// High score table: top MAX_SCORES entries, kept in this browser only and separate from the 2.5D board.
+const cleanName = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+let scores = [];
+try {
+  const raw = JSON.parse(localStorage.getItem(SCORES_KEY) || '[]');
+  if (Array.isArray(raw)) {
+    scores = raw.map(e => ({ name: cleanName(e?.name) || '---', score: Math.max(0, Math.floor(+e?.score || 0)), round: Math.max(1, Math.floor(+e?.round || 1)) }))
+      .filter(e => e.score > 0).sort((a, b) => b.score - a.score).slice(0, MAX_SCORES);
+  }
+} catch { /* storage unavailable or corrupt */ }
+if (scores.length) G.hi = Math.max(G.hi, scores[0].score);
+const scoreRank = n => { const i = scores.findIndex(e => n > e.score); return i < 0 ? scores.length : i; };
+const qualifies = n => n > 0 && scoreRank(n) < MAX_SCORES;
+function saveScore(name, score, round) {
+  const i = scoreRank(score);
+  scores.splice(i, 0, { name, score, round });
+  scores.length = Math.min(scores.length, MAX_SCORES);
+  try { localStorage.setItem(SCORES_KEY, JSON.stringify(scores)); localStorage.setItem(NAME_KEY, name); } catch { /* storage unavailable */ }
+  return i;
+}
+function scoresTable(mark = -1) {
+  if (!scores.length) return '<p class="empty">No scores yet. Be the first on the board.</p>';
+  const rows = scores.map((e, i) => `<tr${i === mark ? ' class="mark"' : ''}><td>${i + 1}</td><td>${e.name}</td><td>${e.score.toLocaleString()}</td><td>${e.round}</td></tr>`).join('');
+  return `<table class="scores"><thead><tr><th>#</th><th>Name</th><th>Score</th><th>Round</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
 const P = { x: W / 2, dead: false, respawn: 0, invuln: 0, shieldT: 0, shieldCd: 0, fireCd: 0, deathT: 0 };
 const shots = [], bombs = [], birds = [], bigs = [], bursts = [];
 let ms = null;
@@ -253,7 +283,10 @@ const CONTROLS = `<div class="keys">
   <kbd>M</kbd><span>Mute</span>
 </div>`;
 
-function showModal(kicker, title, body, btn) {
+let modalBack = null;       // set while the High Scores view is open: re-shows the modal underneath
+let pendingEntry = false;   // the game-over modal is waiting for initials
+function showModal(kicker, title, body, btn, links = false) {
+  $('m-links').hidden = !links;
   $('m-kicker').textContent = kicker;
   $('m-title').textContent = title;
   $('m-body').innerHTML = body;
@@ -262,30 +295,60 @@ function showModal(kicker, title, body, btn) {
   $('m-btn').focus();
 }
 const hideModal = () => $('modal').classList.remove('open');
-const showMenu = () => showModal('Classic 1980 mode', 'PHOENIX', `A pixel-for-pixel-spirited recreation of the arcade cabinet: five rounds, one shot at a time, the force field, and the mothership.${CONTROLS}`, 'Insert Coin');
+const showMenu = () => showModal('Classic 1980 mode', 'PHOENIX', `A pixel-for-pixel-spirited recreation of the arcade cabinet: five rounds, one shot at a time, the force field, and the mothership.${CONTROLS}`, 'Insert Coin', true);
+const showPause = () => showModal('Classic 1980 mode', 'PAUSED', CONTROLS, 'Resume', true);
 
 function modalAction() {
   audio();
-  if (G.mode === 'paused') { hideModal(); G.mode = 'play'; }
+  if (pendingEntry) submitEntry();
+  else if (modalBack) { const back = modalBack; modalBack = null; back(); }
+  else if (G.mode === 'paused') { hideModal(); G.mode = 'play'; }
   else if (G.mode !== 'play') newGame();
 }
 $('m-btn').addEventListener('click', modalAction);
+$('m-scores').addEventListener('click', () => {
+  if (G.mode === 'play') return;
+  modalBack = G.mode === 'paused' ? showPause : showMenu;
+  showModal('Top 10', 'HIGH SCORES', scoresTable(), 'Back');
+});
 
 function togglePause() {
-  if (G.mode === 'play') { G.mode = 'paused'; showModal('Classic 1980 mode', 'PAUSED', CONTROLS, 'Resume'); }
+  if (G.mode === 'play') { G.mode = 'paused'; showPause(); }
   else if (G.mode === 'paused') modalAction();
 }
 
 function gameOver() {
   G.mode = 'over';
-  showModal('Final score', 'GAME OVER', `<span class="big">${G.score.toLocaleString()}</span>High score <strong>${G.hi.toLocaleString()}</strong><br>You reached round <strong>${roundNo()}</strong>.`, 'Play Again');
+  if (!qualifies(G.score)) { showGameOver(-1); return; }
+  let last = '';
+  try { last = cleanName(localStorage.getItem(NAME_KEY)); } catch { /* storage unavailable */ }
+  const body = `<span class="big">${G.score.toLocaleString()}</span>` +
+    `<span class="new">Rank ${scoreRank(G.score) + 1} on the board</span>` +
+    `<label class="entry">Enter your initials<input id="m-name" type="text" maxlength="3" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${last}"></label>`;
+  showModal('Final score', 'GAME OVER', body, 'Save Score');
+  pendingEntry = true;
+  const input = $('m-name');
+  input.addEventListener('input', () => { input.value = cleanName(input.value); });
+  input.focus();
+  input.select();
+}
+
+function submitEntry() {
+  pendingEntry = false;
+  showGameOver(saveScore(cleanName($('m-name').value) || 'AAA', G.score, roundNo()));
+}
+
+function showGameOver(mark) {
+  showModal('Final score', 'GAME OVER', `<span class="big">${G.score.toLocaleString()}</span>You reached round <strong>${roundNo()}</strong>.${scoresTable(mark)}`, 'Play Again');
 }
 
 const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', Space: 'fire', ArrowUp: 'fire', KeyW: 'fire', ArrowDown: 'shield', KeyS: 'shield', ShiftLeft: 'shield', ShiftRight: 'shield' };
 addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
-  if (k) { keys[k] = true; if (G.mode === 'play') e.preventDefault(); }
+  const typing = e.target instanceof HTMLInputElement;   // initials entry: only Enter is ours
+  if (k && !typing) { keys[k] = true; if (G.mode === 'play') e.preventDefault(); }
   if (e.repeat) return;
+  if (typing && e.code !== 'Enter') return;
   if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
   if (e.code === 'KeyM') G.muted = !G.muted;
   if (e.code === 'Enter' && G.mode !== 'play') { e.preventDefault(); modalAction(); }
@@ -623,7 +686,7 @@ function render() {
   // eggs and large birds
   for (const b of bigs) {
     if (!b.hatched) { blit(EGG[b.stage], b.x, b.y); continue; }
-    const set = BIG[b.kind], f = [0, 1, 2, 1][Math.floor(b.t * 8) % 4];
+    const set = BIG[b.kind], f = flapFrame(b.t, 8);
     if (b.wing[0] <= 0) blit(set.left[f], b.x - 9, b.y);
     if (b.wing[1] <= 0) blit(set.right[f], b.x + 9, b.y);
     blit(set.body, b.x, b.y);
@@ -631,7 +694,7 @@ function render() {
 
   // small birds
   for (const b of birds) {
-    const f = b.state === 'form' ? [0, 1, 2, 1][Math.floor((G.t + b.ph) * 6) % 4] : [0, 1, 2, 1][Math.floor(b.t * 14) % 4];
+    const f = b.state === 'form' ? flapFrame(G.t + b.ph, 6) : flapFrame(b.t, 14);
     const img = SMALL[b.kind][f];
     if (b.flip) {
       ctx.save(); ctx.translate(Math.round(b.x), Math.round(b.y)); ctx.scale(-1, 1);
@@ -652,7 +715,7 @@ function render() {
   }
 
   for (const b of bursts) {
-    const f = Math.min(2, Math.floor(b.t / (b.big ? 0.2 : 0.12)));
+    const f = clamp(Math.floor(b.t / (b.big ? 0.2 : 0.12)), 0, 2);
     blit(BURST[f], b.x, b.y);
   }
   if (G.bonus && ms) text(String(G.bonus.v), Math.round(ms.x), Math.round(ms.y) + 20, PAL.Y, 'center');
@@ -687,4 +750,4 @@ document.fonts.load(FONT).catch(() => {}).finally(() => {
 });
 
 // ?debug exposes the simulation so it can be stepped from the console
-if (new URLSearchParams(location.search).has('debug')) window.__dbg = { G, P, keys, update, birds, bigs, bombs, shots, startRound, get ms() { return ms; } };
+if (new URLSearchParams(location.search).has('debug')) window.__dbg = { G, P, keys, update, frame, render, birds, bigs, bombs, shots, startRound, get ms() { return ms; } };

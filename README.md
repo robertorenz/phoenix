@@ -47,7 +47,7 @@ The classic mode is drawn on the cabinet's 208×256 vertical raster with hand-ma
 - Small birds score 20 in formation and 40 / 50 / 80 the lower they are when hit; an extra ship comes at 5,000 points.
 - The two tunes the cabinet played, Sor's *Romance de Amor* and Beethoven's *Für Elise*, are synthesized at game start and when the mothership arrives.
 
-Its high score is kept separately from the 2.5D table.
+It has its own top-10 high score table (initials, score, round), kept separately from the 2.5D board.
 
 ## Controls
 
